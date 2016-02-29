@@ -46,9 +46,9 @@
             // 
             this.textBox1.Location = new System.Drawing.Point(140, 208);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(196, 20);
+            this.textBox1.Size = new System.Drawing.Size(343, 20);
             this.textBox1.TabIndex = 1;
-            this.textBox1.Text = "Hejsa";
+            this.textBox1.Text = "Hejsa, kommer denne meddelse frem?";
             // 
             // Form1
             // 
@@ -58,7 +58,6 @@
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.butSentNotification);
             this.Name = "Form1";
-            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Pushsharp client";
             this.ResumeLayout(false);

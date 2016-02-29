@@ -53,11 +53,15 @@ namespace WebTestClient.Controllers
             // var config = new ApnsConfiguration(ApnsConfiguration.ApnsServerEnvironment.Sandbox, "aps_development.cer", "OapT1986!");
             var certFile = Server.MapPath("~/App_Data/aps_1.cer");
             var config = new ApnsConfiguration(ApnsConfiguration.ApnsServerEnvironment.Sandbox, certFile, "OapT1986!");
+            config.SkipSsl = true;
             // Create a new broker
             var broker = new ApnsServiceBroker(config);
 
-//            broker.OnNotificationFailed += this.NotificationFailed;
-//            broker.OnNotificationSucceeded += this.NotificationSucceeded;
+            broker.OnNotificationFailed += this.NotificationFailed;
+            broker.OnNotificationSucceeded += this.NotificationSucceeded;
+
+            var appleMessageJson = new AppleMessageJson(text, "default", 1);
+            var json = appleMessageJson.ToJson();
 
             // Start the broker
             broker.Start();
@@ -66,7 +70,7 @@ namespace WebTestClient.Controllers
             broker.QueueNotification(new ApnsNotification
             {
                 DeviceToken = deviceToken,
-                Payload = JObject.Parse("{\"aps\":{\"badge\":7}}")
+                Payload = json
             });
 
             // Stop the broker, wait for it to finish   
@@ -105,5 +109,33 @@ namespace WebTestClient.Controllers
             }
         }
 
+        public class AppleMessageJson
+        {
+            public AppleMessageJson(string message, string sound, int badge)
+            {
+                this.aps = new Aps(message, sound, badge);
+            }
+
+            public Aps aps { get; private set; }
+
+            public JObject ToJson()
+            {
+                return JObject.FromObject(this);
+            }
+
+            public class Aps
+            {
+                public Aps(string message, string sound, int badge)
+                {
+                    this.alert = message;
+                    this.sound = sound;
+                    this.badge = badge;
+                }
+
+                public string alert { get; private set; }
+                public int badge { get; private set; }
+                public string sound { get; private set; }
+            }
+        }
     }
 }
