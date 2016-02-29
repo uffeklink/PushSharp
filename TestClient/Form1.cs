@@ -23,11 +23,12 @@ namespace TestClient
         private void butSentNotification_Click(object sender, EventArgs e)
         {
 
-            SentNotification("Hej Arun, kommer denne frem?", "e7f1cb61 6b33c8ac fa5124ed 85924351 346a554e 15ebb7fc ef03fb28 6d32d6eb");
+            SentNotification(this.textBox1.Text, "20e2d9c5 2e0f209c de3fec6d 43db5cde 7ec09ec4 7a7a1ab7 8a62377e 18a9f04b");
+            SentNotification(this.textBox1.Text, "e7f1cb61 6b33c8ac fa5124ed 85924351 346a554e 15ebb7fc ef03fb28 6d32d6eb");
         }
 
 
-        private void SentNotification(string text, string deviceToken)
+        private void SentNotification(string message, string deviceToken)
         {
             deviceToken = deviceToken.Replace(" ", string.Empty);
 
@@ -43,12 +44,20 @@ namespace TestClient
             // Start the broker
             broker.Start();
 
-            // Queue a notification to send
-            broker.QueueNotification(new ApnsNotification
+            var xPayload = JObject.Parse("{\"aps\":{\"badge\":7}}");
+            
+            var appleMessageJson = new AppleMessageJson(message, "default", 1);
+            var json = appleMessageJson.ToJson();
+
+            var apnsNotification =  new ApnsNotification
             {
                 DeviceToken = deviceToken,
-                Payload = JObject.Parse("{\"aps\":{\"badge\":7}}")
-            });
+                Payload = json
+            };
+
+
+            // Queue a notification to send
+            broker.QueueNotification(apnsNotification);
 
             // Stop the broker, wait for it to finish   
             // This isn't done after every message, but after you're
@@ -86,4 +95,35 @@ namespace TestClient
             }
         }
     }
+
+    public class AppleMessageJson
+    {
+        public AppleMessageJson(string message, string sound, int badge)
+        {
+            this.aps = new AppleMessage(message, sound, badge);
+        }
+
+        public AppleMessage aps { get; set; }
+
+        public JObject ToJson()
+        {
+            return JObject.FromObject(this);
+        }
+    }
+
+    public class AppleMessage
+    {
+        public AppleMessage( string message, string sound, int badge)
+        {
+            this.alert = message;
+  //          this.sound = sound;
+            this.badge = badge.ToString();
+        }
+
+        public string alert { get; set; }
+        public string badge { get; set; }
+
+//        public string sound { get; set; }
+    }
 }
+
