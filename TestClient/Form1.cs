@@ -20,7 +20,7 @@ namespace TestClient
         {
             // SentNotification(this.textBox1.Text, "f35090b623a61fac5754117ee72515cf1562ebd9055000d2d67c4c2c0c82d560"); // søren
             // SentNotification(this.textBox1.Text, "e7cc8cae3d9db2bb0fcf4e7a57606842b245fa237933c4e94d6b39a596669ebd"); //TK
-            SentNotification(this.textBox1.Text, "aa4f73f5a3117bd4321c826a5cf5223d10f6d93386c63627861d48a19f3fd844"); // Arun
+            SentNotification(this.textBox1.Text, new string[] { "aa4f73f5a3117bd4321c826a5cf5223d10f6d93386c63627861d48a19f3fd844"} ); // Arun
         }
 
 
@@ -58,34 +58,57 @@ namespace TestClient
 
             return;
         }
-        private void SentNotification(string message, string deviceToken)
+        private void SentNotification(string message, string[] deviceTokens)
         {
-            xx(message, deviceToken);
-            return;
-
-            //var config = new ApnsConfiguration("push-cert.pfx", "push-cert-pwd");
+            // Configuration
             var config = new ApnsConfiguration(ApnsConfiguration.ApnsServerEnvironment.Sandbox, "CertificatesOdendoPush.cer", "OapT1986!");
 
             // Create a new broker
             var broker = new ApnsServiceBroker(config);
 
-            broker.OnNotificationFailed += this.NotificationFailed;
-            broker.OnNotificationSucceeded += this.NotificationSucceeded;
+            // Wire up events
+            broker.OnNotificationFailed += (notification, aggregateEx) => {
+
+                aggregateEx.Handle(ex => {
+
+                    // See what kind of exception it was to further diagnose
+                    if (ex is ApnsNotificationException)
+                    {
+                        var notificationException = ex as ApnsNotificationException;
+
+                        // Deal with the failed notification
+                        var apnsNotification = notificationException.Notification;
+                        var statusCode = notificationException.ErrorStatusCode;
+
+                        Console.WriteLine($"Notification Failed: ID={apnsNotification.Identifier}, Code={statusCode}");
+
+                    }
+                    else {
+                        // Inner exception might hold more useful information like an ApnsConnectionException           
+                        Console.WriteLine($"Notification Failed for some (Unknown Reason) : {ex.InnerException}");
+                    }
+
+                    // Mark it as handled
+                    return true;
+                });
+            };
+
+            broker.OnNotificationSucceeded += (notification) => {
+                Console.WriteLine(@"Notification Sent!");
+            };
 
             // Start the broker
             broker.Start();
 
-            var appleMessageJson = new AppleMessageJson(message, "default", 1);
-            var json = appleMessageJson.ToJson();
-
-            var apnsNotification =  new ApnsNotification
+            foreach (var deviceToken in deviceTokens)
             {
-                DeviceToken = deviceToken,
-                Payload = json
-            };
-
-            // Queue a notification to send
-            broker.QueueNotification(apnsNotification);
+                // Queue a notification to send
+                broker.QueueNotification(new ApnsNotification
+                {
+                    DeviceToken = deviceToken,
+                    Payload = JObject.Parse("{\"aps\":{\"badge\":7}}")
+                });
+            }
 
             // Stop the broker, wait for it to finish   
             // This isn't done after every message, but after you're
